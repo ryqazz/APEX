@@ -1,0 +1,13 @@
+apex_gateway/
+├── main.py                  
+├── config.py                
+├── scanners-user-agents.data
+├── deberta_v3_small_prompt_injection.onnx
+├── modules/
+│   ├── __init__.py          
+│   ├── initial_request_filter.py  # NEW: Handles the User-Agent scanner blocklist
+│   ├── regex_filter.py            # UPDATED: Handles only the JSON prompt blocklist
+│   ├── ml_classifier.py     
+│   ├── strike_manager.py    
+│   └── telemetry_logger.py  
+└── requirements.txt
