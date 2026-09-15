@@ -1,31 +1,97 @@
-# modules/ml_classifier.py
-import os
 import numpy as np
 import onnxruntime as ort
 from transformers import AutoTokenizer
-from config import ONNX_MODEL_PATH, TOKENIZER_NAME
+from datasets import load_dataset
+from scipy.special import softmax
+import os
+from pathlib import Path
 
-def calculate_softmax(logits):
-    e_x = np.exp(logits - np.max(logits))
-    return e_x / e_x.sum(axis=-1, keepdims=True)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+QUANTIZED_MODEL_PATH = PROJECT_ROOT / "model.int8.onnx"
+ONNX_MODEL_PATH = QUANTIZED_MODEL_PATH if QUANTIZED_MODEL_PATH.exists() else PROJECT_ROOT / "model.onnx"
 
-ml_enabled = False
-ort_session = None
-tokenizer = None
+_session = None
+_tokenizer = None
+ml_enabled = ONNX_MODEL_PATH.exists()
 
-try:
-    if os.path.exists(ONNX_MODEL_PATH):
-        ort_session = ort.InferenceSession(ONNX_MODEL_PATH)
-        tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_NAME)
-        ml_enabled = True
-except Exception:
-    pass
 
 def evaluate_semantics(prompt: str) -> float:
+    global _session, _tokenizer
+
     if not ml_enabled:
         return 0.0
-    inputs = tokenizer(prompt, return_tensors="np", truncation=True, max_length=512)
-    ort_inputs = {ort_session.get_inputs()[0].name: inputs["input_ids"]}
-    logits = ort_session.run(None, ort_inputs)[0]
-    confidence = calculate_softmax(logits)[0][1] if logits.shape[-1] > 1 else calculate_softmax(logits)[0][0]
-    return float(confidence)
+
+    if _session is None:
+        _session = ort.InferenceSession(str(ONNX_MODEL_PATH))
+        _tokenizer = AutoTokenizer.from_pretrained(PROJECT_ROOT, local_files_only=True)
+
+    inputs = _tokenizer(prompt, return_tensors="np", padding=True, truncation=True, max_length=512)
+    ort_inputs = {
+        "input_ids": inputs["input_ids"].astype(np.int64),
+        "attention_mask": inputs["attention_mask"].astype(np.int64),
+    }
+    logits = _session.run(None, ort_inputs)[0][0]
+    return float(softmax(logits)[1])
+
+def load_hf_datasets():
+    print("Loading HuggingFace datasets...")
+    try:
+        deepset_ds = load_dataset("deepset/prompt-injections", split="train")
+        hackaprompt_ds = load_dataset("hackaprompt/hackaprompt-dataset", split="train")
+        print(f"Success: Loaded {len(deepset_ds)} deepset records and {len(hackaprompt_ds)} HackAPrompt records.\n")
+    except Exception as e:
+        print(f"Warning: Could not fetch datasets. Error: {e}\n")
+
+def run_classifier_test():
+    # 1. Initialize ONNX and Tokenizer
+    # Make sure your actual .onnx file matches this name and is in the APEX/APEX folder
+    print(f"Initializing local ONNX session using '{ONNX_MODEL_PATH}'...")
+    if not os.path.exists(ONNX_MODEL_PATH):
+        print(f"ERROR: '{ONNX_MODEL_PATH}' not found in the current directory.")
+        print("Please place your ONNX model file in the APEX/APEX folder before running.")
+        return
+
+    session = ort.InferenceSession(ONNX_MODEL_PATH)
+    tokenizer = AutoTokenizer.from_pretrained(PROJECT_ROOT, local_files_only=True)
+    print("ONNX runtime initialized successfully.\n")
+
+    # 2. Terminal Loop for Manual Testing
+    print("="*55)
+    print("Semantic ML Classifier - Local Terminal Test")
+    print("Threshold: 0.5 (Scores >= 0.5 flagged as injection)")
+    print("Type 'exit' to quit.")
+    print("="*55)
+
+    while True:
+        user_input = input("\n[Terminal] Enter text string: ")
+        if user_input.lower() in ['exit', 'quit']:
+            break
+        if not user_input.strip():
+            continue
+
+        # Tokenize input
+        inputs = tokenizer(user_input, return_tensors="np", padding=True, truncation=True, max_length=512)
+        
+        # Prepare inputs for ONNX
+        ort_inputs = {
+            "input_ids": inputs["input_ids"].astype(np.int64),
+            "attention_mask": inputs["attention_mask"].astype(np.int64)
+        }
+        
+        # Run inference
+        outputs = session.run(None, ort_inputs)
+        logits = outputs[0][0]
+        
+        # Apply softmax to get confidence score
+        probabilities = softmax(logits)
+        confidence_score = probabilities[1] # Index 1 is typically the 'injection' class
+        
+        # Check against 0.5 baseline
+        is_injection = confidence_score >= 0.5
+        
+        print(f"--> Classification: {'[INJECTION DETECTED]' if is_injection else '[SAFE]'}")
+        print(f"--> Confidence Score: {confidence_score:.4f} (Baseline: 0.5)")
+
+if __name__ == "__main__":
+    load_hf_datasets()
+    run_classifier_test()
