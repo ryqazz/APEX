@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 # Import Shared Config
-from .config import OLLAMA_TARGET_URL, ML_CONFIDENCE_THRESHOLD
+from config import OLLAMA_TARGET_URL, ML_CONFIDENCE_THRESHOLD
 
 # Import Internal Modules
 from .modules.telemetry_logger import log_telemetry, get_current_time
