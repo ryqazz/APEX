@@ -13,11 +13,11 @@ from slowapi.errors import RateLimitExceeded
 from config import OLLAMA_TARGET_URL, ML_CONFIDENCE_THRESHOLD
 
 # Import Internal Modules
-from modules.telemetry_logger import log_telemetry, get_current_time
-from modules.strike_manager import strike_mgr
-from modules.initial_request_filter import is_scanner
-from modules.regex_filter import scan_prompt
-from modules.ml_classifier import evaluate_semantics, ml_enabled
+from Modules.telemetry_logger import log_telemetry, get_current_time
+from Modules.strike_manager import strike_mgr
+from Modules.initial_request_filter import is_scanner
+from Modules.regex_filter import scan_prompt
+from Modules.ml_classifier import evaluate_semantics, ml_enabled
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 app = FastAPI(title="Apex Security Gateway")
