@@ -1,10 +1,31 @@
-# modules/regex_filter.py
+# src/apex_gateway/modules/regex_filter.py
+
 import re
+import logging
+from .signatures import MALICIOUS_PATTERNS
 
-INJECTION_REGEX = re.compile(
-    r"(ignore (all )?previous instructions|system prompt|bypass|dan|do anything now|override)", 
-    re.IGNORECASE
-)
+logger = logging.getLogger(__name__)
 
-def scan_prompt(prompt: str) -> bool:
-    return bool(INJECTION_REGEX.search(prompt))
+COMPILED_SIGNATURES = []
+for pattern in MALICIOUS_PATTERNS:
+    try:
+        COMPILED_SIGNATURES.append(re.compile(pattern))
+    except Exception as e:
+        logger.error(f"Failed to compile regex pattern '{pattern}': {e}")
+        continue
+
+def scan_prompt(prompt_string: str) -> bool:
+    """
+    Evaluates the extracted JSON "prompt" string against the compiled signature database.
+    """
+    if not prompt_string:
+        return False
+        
+    for pattern in COMPILED_SIGNATURES:
+        if pattern.search(prompt_string):
+            return True 
+            
+    return False
+
+# Alias to prevent import errors if any other script calls scan_payload
+scan_payload = scan_prompt

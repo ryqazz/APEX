@@ -1,4 +1,4 @@
-# main.py
+# src/apex_gateway/main.py
 import time
 import json
 from fastapi import FastAPI, Request, HTTPException, status
@@ -41,7 +41,8 @@ async def security_firewall_middleware(request: Request, call_next):
     client_ip = request.client.host
     
     if strike_mgr.is_banned(client_ip):
-        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": "Forbidden"})
+        log_telemetry(client_ip, request.method, request.headers.get("user-agent", ""), "N/A", request.headers.get("x-test-label", "None"), "BLOCKED - BANNED IP ATTEMPT", 0)
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": "Forbidden: IP is permanently banned."})
 
     if request.url.path == "/api/generate" and request.method != "POST":
         log_telemetry(client_ip, request.method, request.headers.get("user-agent", ""), "N/A", request.headers.get("x-test-label", "None"), "BLOCKED - UNAUTHORIZED METHOD", 0)
@@ -66,7 +67,7 @@ async def apex_gateway(request: Request):
         strike_mgr.ban_ip(client_ip) 
         log_telemetry(client_ip, request.method, user_agent, "N/A", test_label, "BLOCKED - SCANNER DETECTED", 0)
         print(f"[{get_current_time()}] ACTION: IP {client_ip} BANNED (Scanner Detected)")
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403, detail="Forbidden: Unauthorized scanner detected.")
 
     try:
         body_bytes = await request.body()
@@ -101,10 +102,12 @@ async def apex_gateway(request: Request):
             strike_mgr.ban_ip(client_ip) 
             print(f"[{get_current_time()}] ACTION: IP {client_ip} BANNED (Max Strikes Reached)")
             log_telemetry(client_ip, request.method, user_agent, prompt, test_label, f"BLOCKED - AUTO-BAN ({rule_triggered})", latency)
-            raise HTTPException(status_code=403, detail="Forbidden")
+            # FIX: Clearly state it's a ban
+            raise HTTPException(status_code=403, detail="Forbidden: Maximum strikes reached. IP is permanently banned.")
         else:
             log_telemetry(client_ip, request.method, user_agent, prompt, test_label, f"BLOCKED - WARNING {strikes}/3 ({rule_triggered})", latency)
-            raise HTTPException(status_code=403, detail="Forbidden")
+            # FIX: Clearly state it's a warning
+            raise HTTPException(status_code=403, detail=f"Forbidden: Malicious activity flagged. Warning {strikes}/3.")
 
     payload_dict["stream"] = False
 
