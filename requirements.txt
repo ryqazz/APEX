@@ -1,0 +1,13 @@
+datasets
+pandas>=2.0
+matplotlib>=3.7
+fastapi
+httpx
+numpy
+onnxruntime
+optimum[onnxruntime]
+pydantic
+scipy
+slowapi
+transformers
+uvicorn

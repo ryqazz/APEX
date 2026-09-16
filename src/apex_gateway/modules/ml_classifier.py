@@ -5,10 +5,12 @@ from datasets import load_dataset
 from scipy.special import softmax
 import os
 from pathlib import Path
+from ..config import ONNX_MODEL_PATH, TOKENIZER_PATH
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-QUANTIZED_MODEL_PATH = PROJECT_ROOT / "model.int8.onnx"
-ONNX_MODEL_PATH = QUANTIZED_MODEL_PATH if QUANTIZED_MODEL_PATH.exists() else PROJECT_ROOT / "model.onnx"
+QUANTIZED_MODEL_PATH = ONNX_MODEL_PATH
+ORIGINAL_MODEL_PATH = ONNX_MODEL_PATH.with_name("model.onnx")
+if not ONNX_MODEL_PATH.exists() and ORIGINAL_MODEL_PATH.exists():
+    ONNX_MODEL_PATH = ORIGINAL_MODEL_PATH
 
 _session = None
 _tokenizer = None
@@ -23,7 +25,7 @@ def evaluate_semantics(prompt: str) -> float:
 
     if _session is None:
         _session = ort.InferenceSession(str(ONNX_MODEL_PATH))
-        _tokenizer = AutoTokenizer.from_pretrained(PROJECT_ROOT, local_files_only=True)
+        _tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, local_files_only=True)
 
     inputs = _tokenizer(prompt, return_tensors="np", padding=True, truncation=True, max_length=512)
     ort_inputs = {
@@ -52,7 +54,7 @@ def run_classifier_test():
         return
 
     session = ort.InferenceSession(ONNX_MODEL_PATH)
-    tokenizer = AutoTokenizer.from_pretrained(PROJECT_ROOT, local_files_only=True)
+    tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, local_files_only=True)
     print("ONNX runtime initialized successfully.\n")
 
     # 2. Terminal Loop for Manual Testing

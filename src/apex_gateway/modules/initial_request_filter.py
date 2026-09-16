@@ -1,6 +1,7 @@
 # modules/initial_request_filter.py
 import re
 import os
+from ..config import SCANNER_SIGNATURES_PATH
 
 def load_crs_signatures(file_path: str):
     signatures = []
@@ -14,8 +15,7 @@ def load_crs_signatures(file_path: str):
         signatures = [r"sqlmap", r"nikto", r"nmap", r"gobuster", r"acunetix"]
     return re.compile("|".join(signatures), re.IGNORECASE)
 
-DATA_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scanners-user-agents.data")
-SCANNER_REGEX = load_crs_signatures(DATA_FILE_PATH)
+SCANNER_REGEX = load_crs_signatures(SCANNER_SIGNATURES_PATH)
 
 def is_scanner(user_agent: str) -> bool:
     if user_agent and user_agent != "Missing/Empty":

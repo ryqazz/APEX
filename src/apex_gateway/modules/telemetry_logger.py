@@ -2,11 +2,13 @@
 import json
 import logging
 from datetime import datetime
+from ..config import LOG_PATH
 
 logger = logging.getLogger("apex_telemetry")
 logger.setLevel(logging.INFO)
 
-file_handler = logging.FileHandler("apex_security.log")
+LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+file_handler = logging.FileHandler(LOG_PATH)
 logger.addHandler(file_handler)
 logger.propagate = False
 

@@ -3,8 +3,9 @@ from pathlib import Path
 from onnxruntime.quantization import QuantType, quantize_dynamic
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_MODEL = PROJECT_ROOT / "model.onnx"
-QUANTIZED_MODEL = PROJECT_ROOT / "model.int8.onnx"
+MODEL_DIR = PROJECT_ROOT / "models"
+SOURCE_MODEL = MODEL_DIR / "model.onnx"
+QUANTIZED_MODEL = MODEL_DIR / "model.int8.onnx"
 
 if not SOURCE_MODEL.exists():
     raise FileNotFoundError(f"Source model not found: {SOURCE_MODEL}")
