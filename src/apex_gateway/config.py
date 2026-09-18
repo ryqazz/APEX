@@ -7,9 +7,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # --- File Paths ---
 # Export these so your classifier and filter modules can import them
-MODEL_PATH = str(REPO_ROOT / "models" / "model.int8.onnx")
+ONNX_MODEL_PATH = REPO_ROOT / "models" / "model.int8.onnx"
+# ONNX_MODEL_PATH = str(REPO_ROOT / "models" / "model.int8.onnx")
+MODEL_PATH = str(ONNX_MODEL_PATH)
 TOKENIZER_PATH = str(REPO_ROOT / "models")
 SCANNERS_FILE = str(REPO_ROOT / "data" / "scanners-user-agents.data")
+# satisfy the import in initial_request_filter.py:
+SCANNER_SIGNATURES_PATH = SCANNERS_FILE
+
 
 # --- Logging Paths ---
 LOG_DIR = REPO_ROOT / "logs"
@@ -21,3 +26,4 @@ OLLAMA_TARGET_URL = os.getenv("OLLAMA_TARGET_URL", "http://192.168.1.100:11434/a
 
 # ML Threshold
 ML_CONFIDENCE_THRESHOLD = 0.5
+

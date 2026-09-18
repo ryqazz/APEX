@@ -1,6 +1,6 @@
 # src/apex_gateway/modules/__init__.py
 
-from .initial_request_filter import validate_headers
+from .initial_request_filter import is_scanner
 from .regex_filter import scan_payload
 from .ml_classifier import evaluate_prompt
 from .strike_manager import StrikeMgr

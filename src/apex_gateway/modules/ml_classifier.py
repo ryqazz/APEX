@@ -1,3 +1,5 @@
+# src/apex_gateway/modules/ml_classifier.py
+
 import numpy as np
 import onnxruntime as ort
 from transformers import AutoTokenizer
@@ -25,7 +27,7 @@ def evaluate_semantics(prompt: str) -> float:
 
     if _session is None:
         _session = ort.InferenceSession(str(ONNX_MODEL_PATH))
-        _tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, local_files_only=True)
+        _tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, fix_mistral_regex=True, local_files_only=True)
 
     inputs = _tokenizer(prompt, return_tensors="np", padding=True, truncation=True, max_length=512)
     ort_inputs = {
@@ -97,3 +99,7 @@ def run_classifier_test():
 if __name__ == "__main__":
     load_hf_datasets()
     run_classifier_test()
+
+
+# At the bottom of src/apex_gateway/modules/ml_classifier.py
+evaluate_prompt = evaluate_semantics

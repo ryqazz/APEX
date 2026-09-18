@@ -31,3 +31,6 @@ def log_telemetry(client_ip, method, user_agent, payload, test_label, action, la
             f.write(json.dumps(log_entry) + "\n")
     except Exception as e:
         print(f"[{get_current_time()}] ERROR: Failed to write telemetry to log file: {e}")
+
+# At the bottom of src/apex_gateway/modules/telemetry_logger.py
+log_event = log_telemetry
